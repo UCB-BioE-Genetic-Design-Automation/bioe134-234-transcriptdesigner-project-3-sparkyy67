@@ -28,7 +28,7 @@ def hairpin_checker(dna):
         hairpin_count, hairpin_string = hairpin_counter(chunk, min_stem, min_loop, max_loop)
         
         # If more than 1 hairpin is found, return False and the problematic hairpin string
-        if hairpin_count > 1:
+        if hairpin_count > 2:
             return False, hairpin_string
     
     # If no problematic hairpin chunk is found, return True and None

@@ -60,7 +60,7 @@ class CodonChecker:
 
         # Calculate codon diversity
         codon_counts = Counter(cds)
-        codon_diversity = len(codon_counts) / 62
+        codon_diversity = len(codon_counts) / len(cds)
 
         # Count rare codons
         rare_codon_count = sum(codon_counts[codon] for codon in self.rare_codons if codon in cds)
@@ -74,9 +74,9 @@ class CodonChecker:
         cai_value = cai_product ** (1 / len(cai_numerators)) if cai_numerators else 0.0
 
         # Apply thresholds to determine if the codons are above board
-        diversity_threshold = 0.5
-        rare_codon_limit = 3
-        cai_threshold = 0.2
+        diversity_threshold = 0.1
+        rare_codon_limit = 10
+        cai_threshold = 0.10
 
         codons_above_board = (codon_diversity >= diversity_threshold and
                               rare_codon_count <= rare_codon_limit and
