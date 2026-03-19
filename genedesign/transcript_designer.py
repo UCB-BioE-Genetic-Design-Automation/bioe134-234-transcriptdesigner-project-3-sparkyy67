@@ -19,12 +19,14 @@ class TranscriptDesigner:
          reflect actual E. coli CAI values.
       2. Build the CDS codon-by-codon using weighted random selection, avoiding
          repeating the same codon back-to-back and checking forbidden sequence
-         junctions locally using 2-codon, 3-codon windows, lookahead to the
-         next amino acid, AND reverse complement checks.
-      3. After building a full candidate CDS, run all checkers on utr + cds
+         junctions locally using 2-codon, 3-codon windows (both directions),
+         lookahead to the next amino acid, AND reverse complement checks.
+      3. Deprioritize TTG as a Leucine codon since it matches the sigma70
+         promoter -35 box (TTGACA) and causes internal promoter failures.
+      4. After building a full candidate CDS, run all checkers on utr + cds
          exactly matching what the benchmarker validates. Rotate through RBS
-         options to escape UTR-caused hairpins and forbidden sequences.
-      4. Reject invalid peptides immediately rather than wasting retry attempts.
+         options to escape UTR-caused issues.
+      5. Reject invalid peptides immediately rather than wasting retry attempts.
     """
 
     def __init__(self):
@@ -62,7 +64,8 @@ class TranscriptDesigner:
             'H': ['CAT', 'CAC'],
             'I': ['ATT', 'ATC', 'ATA'],
             'K': ['AAA', 'AAG'],
-            'L': ['CTG', 'TTA', 'TTG', 'CTT', 'CTC', 'CTA'],
+            # TTG deprioritized - matches sigma70 -35 box causing promoter failures
+            'L': ['CTG', 'CTT', 'CTC', 'CTA', 'TTA', 'TTG'],
             'M': ['ATG'],
             'N': ['AAT', 'AAC'],
             'P': ['CCG', 'CCA', 'CCT', 'CCC'],
@@ -141,14 +144,24 @@ class TranscriptDesigner:
                 if candidate == last_codon:
                     continue
 
-                # 2-codon window check including RC
+                # 2-codon window: last + candidate
                 if last_codon is not None:
                     if self._creates_forbidden(last_codon + candidate):
                         continue
 
-                # 3-codon window check including RC
+                # 3-codon window: prev_prev + last + candidate
                 if prev_prev is not None:
                     if self._creates_forbidden(prev_prev + last_codon + candidate):
+                        continue
+
+                # 3-codon window: last + candidate + next
+                # catches sites like GTG+GAT+CCG where site starts mid last_codon
+                if last_codon is not None and next_options:
+                    all_next_bad = all(
+                        self._creates_forbidden(last_codon + candidate + next_c)
+                        for next_c in next_options
+                    )
+                    if all_next_bad:
                         continue
 
                 # Lookahead: skip only if ALL next codons create a forbidden
