@@ -1,10 +1,10 @@
 import sys
 import csv
-from collections import Counter  # Import Counter for counting codons
+from collections import Counter
 
 class CodonChecker:
     """
-    Description: 
+    Description:
     This class checks codon usage for a given CDS and calculates metrics like:
     1. Codon Diversity: Fraction of unique codons.
     2. Rare Codon Count: Number of rare codons in the sequence.
@@ -32,51 +32,47 @@ class CodonChecker:
         codon_usage_file = 'genedesign/data/codon_usage.txt'
         self.codon_frequencies = {}
         self.rare_codons = []
-        self.rare_codon_threshold = 0.1  # Threshold for rare codon frequency
+        self.rare_codon_threshold = 0.1
 
         with open(codon_usage_file, 'r') as f:
             reader = csv.reader(f, delimiter='\t')
             for row in reader:
                 if len(row) < 4:
-                    continue  # Skip invalid rows
+                    continue
                 codon = row[0].strip()
                 usage_freq = float(row[2].strip())
                 self.codon_frequencies[codon] = usage_freq
-                
-                # Identify rare codons
                 if usage_freq < self.rare_codon_threshold:
                     self.rare_codons.append(codon)
 
     def run(self, cds: list[str]) -> tuple[bool, float, int, float]:
         """
-        Calculates codon diversity, rare codon count, and Codon Adaptation Index (CAI) for the provided CDS.
-        Returns a boolean indicating whether the codons pass specified thresholds.
+        Calculates codon diversity, rare codon count, and CAI for the provided CDS.
 
         :param cds: List of codons representing the CDS.
         :return: Tuple containing a boolean, codon diversity, rare codon count, and CAI score.
         """
         if not cds:
-            return False, 0.0, 0, 0.0  # Return false for empty CDS
+            return False, 0.0, 0, 0.0
 
-        # Calculate codon diversity
+        # Diversity = unique codons / total codons
         codon_counts = Counter(cds)
         codon_diversity = len(codon_counts) / len(cds)
 
         # Count rare codons
         rare_codon_count = sum(codon_counts[codon] for codon in self.rare_codons if codon in cds)
 
-        # Calculate CAI (Codon Adaptation Index) as the geometric mean of codon frequencies
-        cai_numerators = [self.codon_frequencies.get(codon, 0.01) for codon in cds]  # Use 0.01 for unknown codons
+        # CAI as geometric mean of codon frequencies
+        cai_numerators = [self.codon_frequencies.get(codon, 0.01) for codon in cds]
         cai_product = 1
         for freq in cai_numerators:
             cai_product *= freq
-        
         cai_value = cai_product ** (1 / len(cai_numerators)) if cai_numerators else 0.0
 
-        # Apply thresholds to determine if the codons are above board
-        diversity_threshold = 0.1
-        rare_codon_limit = 10
-        cai_threshold = 0.10
+        # Thresholds
+        diversity_threshold = 0.3
+        rare_codon_limit = 5
+        cai_threshold = 0.15
 
         codons_above_board = (codon_diversity >= diversity_threshold and
                               rare_codon_count <= rare_codon_limit and
@@ -84,25 +80,12 @@ class CodonChecker:
 
         return codons_above_board, codon_diversity, rare_codon_count, cai_value
 
+
 if __name__ == "__main__":
-    """
-    Main method for running the CodonChecker on a hardcoded CDS.
-    This method initializes CodonChecker, runs it on a hardcoded CDS, and prints
-    the results including a boolean indicating if the codons are acceptable,
-    codon diversity, rare codon count, and CAI for the sequence.
-    """
-    # Initialize the codon checker
     codon_checker = CodonChecker()
     codon_checker.initiate()
-
-    # Hardcoded example CDS
-    cds = ['ATG', 'CAA', 'GGG', 'TAA']  # High CAI example
-    # cds = ['AGG', 'AGA', 'AGG', 'AGA']  # Very low CAI example
-    
-    # Run CodonChecker
+    cds = ['ATG', 'CAA', 'GGG', 'TAA']
     codons_above_board, codon_diversity, rare_codon_count, cai_value = codon_checker.run(cds)
-
-    # Print results
     print(f"CDS: {cds}")
     print(f"Codons Above Board: {codons_above_board}")
     print(f"Codon Diversity: {codon_diversity}")
