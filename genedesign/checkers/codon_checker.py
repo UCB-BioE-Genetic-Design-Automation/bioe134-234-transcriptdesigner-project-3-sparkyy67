@@ -70,7 +70,7 @@ class CodonChecker:
         cai_value = cai_product ** (1 / len(cai_numerators)) if cai_numerators else 0.0
 
         # Thresholds
-        diversity_threshold = 0.3
+        diversity_threshold = 0.15
         rare_codon_limit = 5
         cai_threshold = 0.15
 
