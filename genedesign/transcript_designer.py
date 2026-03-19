@@ -191,7 +191,7 @@ class TranscriptDesigner:
 
             # Absolute last resort
             if chosen is None:
-                chosen = options[0]
+                chosen = random.choice(options)
 
             codons.append(chosen)
             last_codon = chosen
